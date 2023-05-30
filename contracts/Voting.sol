@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract Voting {
+contract DecentralizedVotingApp {
     struct Poll {
-        uint id;
         string title;
         string description;
         address creator;
-        mapping(uint => Option) options;
         uint optionCount;
+        mapping(uint => Option) options;
         mapping(address => bool) hasVoted;
     }
 
@@ -37,12 +36,17 @@ contract Voting {
         _;
     }
 
-    event CreatePoll(
+    modifier isVaildPollid(uint _pollId) {
+        require(_pollId <= pollCount, "Only pollCount is bigger than pollId");
+        _;
+    }
+
+    event PollCreated(
         address indexed creator,
         string _title,
         string _description
     );
-    event AddOption(address indexed creator, uint _pollId, string _text);
+    event OptionAdded(address indexed creator, uint _pollId, string _text);
     event Voted(address indexed voter, uint _pollId, uint _optionId);
 
     /*//////////////////////////////////////////////////////////////
@@ -58,12 +62,12 @@ contract Voting {
         );
         pollCount++;
         Poll storage p = polls[pollCount];
-        p.id = pollCount;
         p.title = _title;
+        p.optionCount = 0;
         p.description = _description;
         p.creator = msg.sender;
 
-        emit CreatePoll(msg.sender, _title, _description);
+        emit PollCreated(msg.sender, _title, _description);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -79,13 +83,16 @@ contract Voting {
             _text,
             0
         );
-        emit AddOption(msg.sender, _pollId, _text);
+        emit OptionAdded(msg.sender, _pollId, _text);
     }
 
     /*//////////////////////////////////////////////////////////////
                           Vote to the option
     //////////////////////////////////////////////////////////////*/
-    function vote(uint _pollId, uint _optionId) public onlyOnceVote(_pollId) {
+    function vote(
+        uint _pollId,
+        uint _optionId
+    ) public onlyOnceVote(_pollId) isVaildPollid(_pollId) {
         polls[_pollId].hasVoted[msg.sender] = true;
         polls[_pollId].options[_optionId].voteCount++;
         emit Voted(msg.sender, _pollId, _optionId);

@@ -10,7 +10,7 @@ describe("Voting contract", function () {
   beforeEach(async function () {
     [creator, user] = await ethers.getSigners();
     // Deploy a new Voting contract before each test
-    const Voting = await ethers.getContractFactory("Voting");
+    const Voting = await ethers.getContractFactory("DecentralizedVotingApp");
     votingContract = await Voting.deploy();
     await votingContract.deployed();
 
@@ -19,7 +19,7 @@ describe("Voting contract", function () {
 
   it("should create a new poll", async function () {
     // Call the createPoll function and check that a new poll is created
-    await expect(votingContract.connect(creator).createPoll("Test Poll", "This is a test poll")).to.emit(votingContract, "CreatePoll");
+    await expect(votingContract.connect(creator).createPoll("Test Poll", "This is a test poll")).to.emit(votingContract, "PollCreated");
     const poll = await votingContract.polls(1);
     expect(poll.title).to.equal("Test Poll");
     expect(poll.description).to.equal("This is a test poll");
@@ -29,7 +29,7 @@ describe("Voting contract", function () {
   it("should add an option to a poll", async function () {
     // Create a new poll and call the addOption function to add an option
     await votingContract.connect(creator).createPoll("Test Poll", "This is a test poll");
-    await expect(votingContract.connect(creator).addOption(1, "Option 1")).to.emit(votingContract, "AddOption");
+    await expect(votingContract.connect(creator).addOption(1, "Option 1")).to.emit(votingContract, "OptionAdded");
     const poll = await votingContract.polls(1);
     const optionText = await votingContract.getOptionText(1, 1);
     const voteCount = await votingContract.getVoteCount(1, 1);
@@ -77,10 +77,18 @@ describe("Voting contract", function () {
     await expect(votingContract.connect(user).vote(1, 1)).to.be.revertedWith("You have already voted in this poll");
   });
 
+  it("should only allow pollCount is bigger than pollId", async function () {
+    // Create a new poll
+    await votingContract.connect(creator).createPoll("Test Poll", "This is a test poll");
+    await expect(votingContract.connect(user).vote(2, 1)).to.be.revertedWith("Only pollCount is bigger than pollId");
+  });
+
   it("should only allow the creator to add options to a poll", async function () {
     // Create a new poll and try to add an option as a different user
     await votingContract.connect(creator).createPoll("Test Poll", "This is a test poll");
     const signer = ethers.provider.getSigner(1);
     await expect(votingContract.connect(signer).addOption(1, "Option 1")).to.be.revertedWith("Only the poll creator can add options");
   });
+
+
 });

@@ -14,7 +14,7 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const VotingContract = await ethers.getContractFactory("Voting"); //Replace with name of your smart contract
+  const VotingContract = await ethers.getContractFactory("DecentralizedVotingApp"); //Replace with name of your smart contract
   const contract = await VotingContract.deploy();
 
   console.log("VotingContract address:", contract.address);
